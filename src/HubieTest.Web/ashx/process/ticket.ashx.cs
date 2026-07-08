@@ -1,7 +1,10 @@
-using System.Web;
 using HubieTest.Business;
 using HubieTest.Web.ashx;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Web;
 
 namespace HubieTest.Web.process
 {
@@ -28,7 +31,7 @@ namespace HubieTest.Web.process
     {
         public override void ProcessRequest(HttpContext context)
         {
-            base.ProcessRequestSafe(context); // validates the JWT
+            base.ProcessRequestSafe(context); // validates JWT
             context.Response.ContentEncoding = System.Text.Encoding.UTF8;
             context.Response.ContentType = "application/json";
 
@@ -43,7 +46,7 @@ namespace HubieTest.Web.process
 
         private string processRequest(string method, string data)
         {
-            // inject the logged-in user (from the token) into the business layer
+            // Inject logged-in user (from validated JWT) into the business layer
             var business = new ticketBusiness
             {
                 loggedUserId = UserId,
@@ -51,54 +54,134 @@ namespace HubieTest.Web.process
                 loggedUserProfile = UserProfile
             };
 
-            switch (method)
+            try
             {
-                case "open":
-                    // TODO: deserialize TICKET from "data", call business.open(...) and serialize
-                    return notImplemented(method);
+                switch (method)
+                {
+                    // ── REQUESTER: open a new ticket ───────────────────────────────
+                    case "open":
+                        {
+                            var t = JObject.Parse(data ?? "{}");
+                            var newTicket = new HubieTest.Dal.TICKET
+                            {
+                                TICKET_TITLE = (string)t["TICKET_TITLE"],
+                                TICKET_DESCRIPTION = (string)t["TICKET_DESCRIPTION"],
+                                CATEGORY_ID = t["CATEGORY_ID"] != null ? (long)t["CATEGORY_ID"] : 0,
+                                CATEGORY_NAME = (string)t["CATEGORY_NAME"]
+                            };
+                            var created = business.open(newTicket);
+                            return JsonConvert.SerializeObject(created);
+                        }
 
-                case "listMine":
-                    // TODO: return JsonConvert.SerializeObject(business.listMyTickets());
-                    return notImplemented(method);
+                    // ── REQUESTER: list their own tickets ──────────────────────────
+                    case "listMine":
+                        return JsonConvert.SerializeObject(business.listMyTickets());
 
-                case "listQueue":
-                    // TODO: read status (optional) from "data" and call business.listQueue(status)
-                    return notImplemented(method);
+                    // ── AGENT: service queue (optional status filter) ───────────────
+                    case "listQueue":
+                        {
+                            string status = null;
+                            if (!string.IsNullOrEmpty(data))
+                            {
+                                var d = JObject.Parse(data);
+                                status = (string)d["status"];
+                            }
+                            return JsonConvert.SerializeObject(business.listQueue(status));
+                        }
 
-                case "get":
-                    // TODO: read ticketId from "data" and call business.get(ticketId)
-                    return notImplemented(method);
+                    // ── BOTH: ticket header ────────────────────────────────────────
+                    case "get":
+                        {
+                            long id = parseId(data, "ticketId");
+                            return JsonConvert.SerializeObject(business.get(id));
+                        }
 
-                case "assign":
-                    // TODO: read ticketId from "data" and call business.assign(ticketId)
-                    return notImplemented(method);
+                    // ── AGENT: take the ticket ─────────────────────────────────────
+                    case "assign":
+                        {
+                            long id = parseId(data, "ticketId");
+                            business.assign(id);
+                            return JsonConvert.SerializeObject(new { success = true });
+                        }
 
-                case "changeStatus":
-                    // TODO: read ticketId + status from "data" and call business.changeStatus(...)
-                    return notImplemented(method);
+                    // ── AGENT (+ REQUESTER for CLOSED): change status ──────────────
+                    case "changeStatus":
+                        {
+                            var d = JObject.Parse(data ?? "{}");
+                            long id = (long)d["ticketId"];
+                            string s = (string)d["status"];
+                            business.changeStatus(id, s);
+                            return JsonConvert.SerializeObject(new { success = true });
+                        }
 
-                case "addInteraction":
-                    // TODO: read ticketId + message from "data" and call business.addInteraction(...)
-                    return notImplemented(method);
+                    // ── BOTH: add a message to the thread ─────────────────────────
+                    case "addInteraction":
+                        {
+                            var d = JObject.Parse(data ?? "{}");
+                            long id = (long)d["ticketId"];
+                            string msg = (string)d["message"];
+                            var created = business.addInteraction(id, msg);
+                            return JsonConvert.SerializeObject(created);
+                        }
 
-                case "listInteractions":
-                    // TODO: read ticketId from "data" and call business.listInteractions(ticketId)
-                    return notImplemented(method);
+                    // ── BOTH: list interactions ───────────────────────────────────
+                    case "listInteractions":
+                        {
+                            long id = parseId(data, "ticketId");
+                            return JsonConvert.SerializeObject(business.listInteractions(id));
+                        }
 
-                case "listAttachments":
-                    // TODO: read ticketId from "data" and call business.listAttachments(ticketId)
-                    return notImplemented(method);
+                    // ── BOTH: list attachments ────────────────────────────────────
+                    case "listAttachments":
+                        {
+                            long id = parseId(data, "ticketId");
+                            return JsonConvert.SerializeObject(business.listAttachments(id));
+                        }
 
-                default:
-                    HttpStatusReturn = 400;
-                    return JsonConvert.SerializeObject(new { error = "Unsupported method: " + method });
+                    default:
+                        HttpStatusReturn = 400;
+                        return JsonConvert.SerializeObject(new { error = "Unsupported method: " + method });
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                HttpStatusReturn = 403;
+                return JsonConvert.SerializeObject(new { error = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                HttpStatusReturn = 404;
+                return JsonConvert.SerializeObject(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                HttpStatusReturn = 400;
+                return JsonConvert.SerializeObject(new { error = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                HttpStatusReturn = 422;
+                return JsonConvert.SerializeObject(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                HttpStatusReturn = 500;
+                return JsonConvert.SerializeObject(new { error = "Internal error: " + ex.Message });
             }
         }
 
-        private string notImplemented(string method)
+        /// <summary>Parses a ticketId from the JSON data field.</summary>
+        private long parseId(string data, string fieldName)
         {
-            HttpStatusReturn = 501; // Not Implemented
-            return JsonConvert.SerializeObject(new { error = "Method not implemented yet: " + method });
+            if (string.IsNullOrEmpty(data))
+                throw new ArgumentException($"Missing field: {fieldName}");
+
+            var d = JObject.Parse(data);
+            var v = d[fieldName];
+            if (v == null)
+                throw new ArgumentException($"Missing field: {fieldName}");
+
+            return (long)v;
         }
     }
 }
