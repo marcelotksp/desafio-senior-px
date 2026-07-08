@@ -23,25 +23,42 @@ namespace HubieTest.Business.Data
         /// <summary>Inserts a new ticket and returns the generated Id (Identity).</summary>
         public long create(TICKET ticket)
         {
-            // HINT (Hubie pattern / ticketDB.create):
-            //   using (var db = new HubieContext()) {
-            //       db.Entry(ticket).State = EntityState.Added;
-            //       db.SaveChanges();
-            //       return ticket.TICKET_ID; // populated after SaveChanges
-            //   }
-            throw new NotImplementedException("TODO: create the ticket via EF and return TICKET_ID.");
+            using (var db = new HubieContext())
+            {
+                db.Configuration.ProxyCreationEnabled = false;
+                db.Configuration.LazyLoadingEnabled = false;
+                db.Entry(ticket).State = EntityState.Added;
+                db.SaveChanges();
+                return ticket.TICKET_ID;
+            }
         }
 
         /// <summary>Returns a ticket by id (or null).</summary>
         public TICKET get(long ticketId)
         {
-            throw new NotImplementedException("TODO: load the ticket by TICKET_ID.");
+            using (var db = new HubieContext())
+            {
+                db.Configuration.ProxyCreationEnabled = false;
+                db.Configuration.LazyLoadingEnabled = false;
+                return db.TICKETS
+                         .AsNoTracking()
+                         .FirstOrDefault(t => t.TICKET_ID == ticketId);
+            }
         }
 
         /// <summary>Lists the tickets opened by a requester (most recent first).</summary>
         public List<TICKET> listByRequester(long requesterId)
         {
-            throw new NotImplementedException("TODO: filter by REQUESTER_ID, order by TICKET_CREATED_DT desc.");
+            using (var db = new HubieContext())
+            {
+                db.Configuration.ProxyCreationEnabled = false;
+                db.Configuration.LazyLoadingEnabled = false;
+                return db.TICKETS
+                         .AsNoTracking()
+                         .Where(t => t.REQUESTER_ID == requesterId)
+                         .OrderByDescending(t => t.TICKET_CREATED_DT)
+                         .ToList();
+            }
         }
 
         /// <summary>
@@ -50,39 +67,88 @@ namespace HubieTest.Business.Data
         /// </summary>
         public List<TICKET> listQueue(string status)
         {
-            throw new NotImplementedException("TODO: list tickets for the agent (optional status filter).");
+            using (var db = new HubieContext())
+            {
+                db.Configuration.ProxyCreationEnabled = false;
+                db.Configuration.LazyLoadingEnabled = false;
+
+                IQueryable<TICKET> query = db.TICKETS.AsNoTracking();
+
+                if (!string.IsNullOrEmpty(status))
+                    query = query.Where(t => t.TICKET_STATUS == status);
+                else
+                    query = query.Where(t => t.TICKET_STATUS != "CLOSED");
+
+                return query.OrderByDescending(t => t.TICKET_CREATED_DT).ToList();
+            }
         }
 
         /// <summary>Updates an existing ticket (status, agent, dates, etc.).</summary>
         public void update(TICKET ticket)
         {
-            // HINT (Hubie pattern / ticketDB.update):
-            //   db.Entry(ticket).State = EntityState.Modified; db.SaveChanges();
-            throw new NotImplementedException("TODO: update the ticket via EF.");
+            using (var db = new HubieContext())
+            {
+                db.Configuration.ProxyCreationEnabled = false;
+                db.Configuration.LazyLoadingEnabled = false;
+                db.Entry(ticket).State = EntityState.Modified;
+                db.SaveChanges();
+            }
         }
 
         // ---------- INTERACTION ----------
 
         public INTERACTION addInteraction(INTERACTION interaction)
         {
-            throw new NotImplementedException("TODO: insert the interaction and return it with the generated id.");
+            using (var db = new HubieContext())
+            {
+                db.Configuration.ProxyCreationEnabled = false;
+                db.Configuration.LazyLoadingEnabled = false;
+                db.Entry(interaction).State = EntityState.Added;
+                db.SaveChanges();
+                return interaction;
+            }
         }
 
         public List<INTERACTION> listInteractions(long ticketId)
         {
-            throw new NotImplementedException("TODO: list the ticket interactions in chronological order.");
+            using (var db = new HubieContext())
+            {
+                db.Configuration.ProxyCreationEnabled = false;
+                db.Configuration.LazyLoadingEnabled = false;
+                return db.INTERACTIONS
+                         .AsNoTracking()
+                         .Where(i => i.TICKET_ID == ticketId)
+                         .OrderBy(i => i.INTERACTION_CREATED_DT)
+                         .ToList();
+            }
         }
 
         // ---------- ATTACHMENT ----------
 
         public ATTACHMENT addAttachment(ATTACHMENT attachment)
         {
-            throw new NotImplementedException("TODO: insert the attachment record and return it with the generated id.");
+            using (var db = new HubieContext())
+            {
+                db.Configuration.ProxyCreationEnabled = false;
+                db.Configuration.LazyLoadingEnabled = false;
+                db.Entry(attachment).State = EntityState.Added;
+                db.SaveChanges();
+                return attachment;
+            }
         }
 
         public List<ATTACHMENT> listAttachments(long ticketId)
         {
-            throw new NotImplementedException("TODO: list the ticket attachments.");
+            using (var db = new HubieContext())
+            {
+                db.Configuration.ProxyCreationEnabled = false;
+                db.Configuration.LazyLoadingEnabled = false;
+                return db.ATTACHMENTS
+                         .AsNoTracking()
+                         .Where(a => a.TICKET_ID == ticketId)
+                         .OrderByDescending(a => a.ATTACHMENT_CREATED_DT)
+                         .ToList();
+            }
         }
     }
 }
