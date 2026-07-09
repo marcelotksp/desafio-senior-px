@@ -1,21 +1,27 @@
 /* =====================================================================
-   myTicketsController (REQUESTER) — TODO (candidate area)
+   myTicketsController (REQUESTER)
    List the logged-in requester's tickets (method 'listMine').
    ===================================================================== */
 angular.module('hubieTest').controller('myTicketsController',
-    ['$scope', '$state', 'apiService',
-    function ($scope, $state, apiService) {
+    ['$scope', '$state', 'apiService', 'modalService',
+    function ($scope, $state, apiService, modalService) {
 
         $scope.tickets = [];
         $scope.loading = false;
 
         $scope.load = function () {
-            // TODO: apiService.request('ashx/process/ticket.ashx', 'listMine', null)
-            //       .then(function (r) { $scope.tickets = r.data; });
+            $scope.loading = true;
+
+            apiService.listMyTickets()
+                .then(function (res) { $scope.tickets = res.data || []; })
+                .catch(function (err) {
+                    modalService.show((err.data || {}).error || 'Failed to load tickets.');
+                })
+                .finally(function () { $scope.loading = false; });
         };
 
-        $scope.openDetail = function (ticket) {
-            $state.go('app.ticketDetail', { id: ticket.TICKET_ID });
+        $scope.openDetail = function (t) {
+            $state.go('app.ticketDetail', { id: t.TICKET_ID });
         };
 
         $scope.load();

@@ -21,14 +21,19 @@ namespace HubieTest.Web.ashx
         {
             tokenMessage = string.Empty;
 
+            // Accept token from Authorization header OR query string (needed for file downloads via <a href>)
             string auth = ctx.Request.Headers["Authorization"];
-            if (string.IsNullOrEmpty(auth))
+            string queryToken = ctx.Request.QueryString["token"];
+
+            if (string.IsNullOrEmpty(auth) && string.IsNullOrEmpty(queryToken))
             {
                 tokenMessage = "INVALID_TOKEN";
                 return false;
             }
 
-            currentToken = auth.Replace("Bearer ", "");
+            currentToken = !string.IsNullOrEmpty(auth)
+                ? auth.Replace("Bearer ", "")
+                : queryToken;
 
             TokenClaims claims;
             if (!SecurityHelper.TryValidate(currentToken, out claims))

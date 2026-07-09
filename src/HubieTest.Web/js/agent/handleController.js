@@ -1,35 +1,106 @@
 /* =====================================================================
-   handleController (AGENT) — TODO (candidate area)
+   handleController (AGENT)
    Open the ticket, allow assigning, replying (interact), attaching and
    changing status.
    ===================================================================== */
 angular.module('hubieTest').controller('handleController',
-    ['$scope', '$stateParams', 'apiService',
-    function ($scope, $stateParams, apiService) {
+    ['$scope', '$stateParams', 'apiService', 'modalService',
+    function ($scope, $stateParams, apiService, modalService) {
 
-        $scope.ticketId = parseInt($stateParams.id, 10);
-        $scope.ticket = null;
+        $scope.ticketId     = parseInt($stateParams.id, 10);
+        $scope.ticket       = null;
         $scope.interactions = [];
-        $scope.attachments = [];
-        $scope.newMessage = '';
+        $scope.attachments  = [];
+        $scope.file         = null;
+        $scope.loading      = false;
+        $scope.sending      = false;
+        $scope.assigning    = false;
+        $scope.changing     = false;
+        $scope.uploading    = false;
+
+        $scope.onFileChange = function (element) {
+            $scope.$apply(function () {
+                $scope.file = element.files[0] || null;
+            });
+        };
 
         $scope.load = function () {
-            // TODO: 'get' + 'listInteractions' + 'listAttachments'
+            $scope.loading = true;
+            apiService.getTicket($scope.ticketId)
+                .then(function (res) {
+                    $scope.ticket = res.data;
+                    return apiService.listInteractions($scope.ticketId);
+                })
+                .then(function (res) {
+                    $scope.interactions = res.data || [];
+                    return apiService.listAttachments($scope.ticketId);
+                })
+                .then(function (res) { $scope.attachments = res.data || []; })
+                .catch(function (err) {
+                    modalService.show((err.data || {}).error || 'Failed to load ticket.');
+                })
+                .finally(function () { $scope.loading = false; });
         };
 
         $scope.assign = function () {
-            // TODO: 'assign' and reload
-            alert('TODO: implement assign.');
+            $scope.assigning = true;
+            apiService.assign($scope.ticketId)
+                .then(function () { return apiService.getTicket($scope.ticketId); })
+                .then(function (res) { $scope.ticket = res.data; })
+                .catch(function (err) {
+                    modalService.show((err.data || {}).error || 'Failed to assign.');
+                })
+                .finally(function () { $scope.assigning = false; });
         };
 
         $scope.reply = function () {
-            // TODO: 'addInteraction' (authorship = logged-in agent) and reload the thread
-            alert('TODO: implement reply.');
+            var el  = document.getElementById('reply-textarea-agent');
+            var msg = el ? el.value : '';
+            if (!msg || !msg.trim()) {
+                modalService.show('Please write a message before sending.', 'Validation');
+                return;
+            }
+            $scope.sending = true;
+            apiService.addInteraction($scope.ticketId, msg)
+                .then(function (res) {
+                    $scope.interactions.push(res.data);
+                    if (el) el.value = '';
+                })
+                .catch(function (err) {
+                    modalService.show((err.data || {}).error || 'Failed to send reply.');
+                })
+                .finally(function () { $scope.sending = false; });
         };
 
         $scope.changeStatus = function (newStatus) {
-            // TODO: 'changeStatus'
-            alert('TODO: implement change status to ' + newStatus + '.');
+            $scope.changing = true;
+            apiService.changeStatus($scope.ticketId, newStatus)
+                .then(function () { return apiService.getTicket($scope.ticketId); })
+                .then(function (res) { $scope.ticket = res.data; })
+                .catch(function (err) {
+                    modalService.show((err.data || {}).error || 'Failed to change status.');
+                })
+                .finally(function () { $scope.changing = false; });
+        };
+
+        $scope.attach = function () {
+            if (!$scope.file) return;
+            $scope.uploading = true;
+            apiService.uploadAttachment($scope.ticketId, $scope.file)
+                .then(function (res) {
+                    $scope.attachments.unshift(res.data);
+                    $scope.file = null;
+                    var el = document.getElementById('file-input-agent');
+                    if (el) el.value = '';
+                })
+                .catch(function (err) {
+                    modalService.show((err.data || {}).error || 'Upload failed.');
+                })
+                .finally(function () { $scope.uploading = false; });
+        };
+
+        $scope.downloadUrl = function (a) {
+            return apiService.downloadUrl($scope.ticketId, a.ATTACHMENT_ID);
         };
 
         $scope.load();

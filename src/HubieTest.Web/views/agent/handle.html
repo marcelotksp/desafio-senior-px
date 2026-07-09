@@ -1,45 +1,106 @@
 <!-- handle.html (AGENT) -->
 <div class="page">
-    <a class="btn btn-link" ui-sref="app.queue">&larr; back to queue</a>
-    <h2>Handle ticket #{{ ticketId }}</h2>
+    <a class="btn btn-link" ui-sref="app.queue">← back to queue</a>
 
-    <!-- TODO (candidate): ticket header ($scope.ticket) -->
+    <div ng-if="loading" class="muted" style="margin:20px 0">Loading…</div>
+
+    <!-- Ticket header + actions -->
     <div class="card" ng-if="ticket">
-        <h3>{{ ticket.TICKET_TITLE }}</h3>
-        <p><strong>Category:</strong> {{ ticket.CATEGORY_NAME }} &middot;
-           <strong>Requester:</strong> {{ ticket.REQUESTER_NAME }} &middot;
-           <strong>Status:</strong> {{ ticket.TICKET_STATUS }}</p>
-        <p>{{ ticket.TICKET_DESCRIPTION }}</p>
-
-        <div class="actions">
-            <button class="btn" ng-click="assign()">Assign to me</button>
-            <button class="btn" ng-click="changeStatus('ANSWERED')">Mark as answered</button>
-            <button class="btn" ng-click="changeStatus('CLOSED')">Close</button>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+            <div>
+                <h3 style="margin:0">{{ ticket.TICKET_TITLE }}</h3>
+                <p style="margin:6px 0 0">
+                    <strong>Category:</strong> {{ ticket.CATEGORY_NAME }} &nbsp;·&nbsp;
+                    <strong>Requester:</strong> {{ ticket.REQUESTER_NAME }} &nbsp;·&nbsp;
+                    <strong>Status:</strong>
+                    <span class="status">{{ ticket.TICKET_STATUS }}</span>
+                </p>
+                <p class="muted" style="font-size:13px;margin:4px 0">
+                    Opened {{ ticket.TICKET_CREATED_DT | date:'dd/MM/yyyy HH:mm' }}
+                    <span ng-if="ticket.AGENT_NAME"> · Assigned to: {{ ticket.AGENT_NAME }}</span>
+                </p>
+            </div>
+            <div class="actions">
+                <button class="btn"
+                        ng-if="ticket.TICKET_STATUS === 'OPEN'"
+                        ng-click="assign()"
+                        ng-disabled="assigning">
+                    {{ assigning ? 'Assigning…' : 'Assign to me' }}
+                </button>
+                <button class="btn btn-primary"
+                        ng-if="ticket.TICKET_STATUS === 'IN_PROGRESS'"
+                        ng-click="changeStatus('ANSWERED')"
+                        ng-disabled="changing">
+                    {{ changing ? 'Updating…' : 'Mark as answered' }}
+                </button>
+                <button class="btn"
+                        ng-if="ticket.TICKET_STATUS === 'ANSWERED'"
+                        ng-click="changeStatus('IN_PROGRESS')"
+                        ng-disabled="changing">
+                    Re-open
+                </button>
+                <button class="btn"
+                        ng-if="ticket.TICKET_STATUS !== 'CLOSED'"
+                        ng-click="changeStatus('CLOSED')"
+                        ng-disabled="changing">
+                    {{ changing ? 'Closing…' : 'Close ticket' }}
+                </button>
+            </div>
         </div>
+        <p ng-if="ticket.TICKET_DESCRIPTION" style="margin-top:12px;white-space:pre-wrap">{{ ticket.TICKET_DESCRIPTION }}</p>
     </div>
 
-    <!-- Thread (TODO) -->
-    <div class="card">
+    <!-- Conversation thread -->
+    <div class="card" ng-if="ticket">
         <h4>Conversation</h4>
         <div class="thread">
-            <div class="msg" ng-repeat="i in interactions" ng-class="{'msg-agent': i.USER_PROFILE === 'AGENT'}">
+            <div class="msg"
+                 ng-repeat="i in interactions"
+                 ng-class="{'msg-agent': i.USER_PROFILE === 'AGENT'}">
                 <div class="msg-author">{{ i.USER_NAME }} <em>({{ i.USER_PROFILE }})</em></div>
-                <div class="msg-text">{{ i.INTERACTION_MESSAGE }}</div>
-                <div class="msg-date">{{ i.INTERACTION_CREATED_DT }}</div>
+                <div class="msg-text" style="white-space:pre-wrap">{{ i.INTERACTION_MESSAGE }}</div>
+                <div class="msg-date">{{ i.INTERACTION_CREATED_DT | date:'dd/MM/yyyy HH:mm' }}</div>
             </div>
-            <p class="muted" ng-if="!interactions.length">No messages yet. (TODO)</p>
+            <p class="muted" ng-if="!interactions.length">No messages yet.</p>
         </div>
-
-        <textarea ng-model="newMessage" rows="3" placeholder="Reply to the requester..."></textarea>
-        <button class="btn btn-primary" ng-click="reply()">Send reply</button>
     </div>
 
-    <!-- Attachments (TODO) -->
-    <div class="card">
+    <div class="card" ng-show="ticket && ticket.TICKET_STATUS !== 'CLOSED'">
+        <textarea id="reply-textarea-agent" rows="3"
+                  placeholder="Reply to the requester…"
+                  ng-disabled="sending"
+                  style="width:100%;box-sizing:border-box"></textarea>
+        <div class="actions" style="margin-top:8px">
+            <button class="btn btn-primary"
+                    ng-click="reply()"
+                    ng-disabled="sending">
+                {{ sending ? 'Sending…' : 'Send reply' }}
+            </button>
+        </div>
+    </div>
+    <div class="card muted" ng-show="ticket && ticket.TICKET_STATUS === 'CLOSED'">
+        This ticket is closed.
+    </div>
+
+    <!-- Attachments -->
+    <div class="card" ng-if="ticket">
         <h4>Attachments</h4>
-        <ul>
-            <li ng-repeat="a in attachments">{{ a.ATTACHMENT_NAME }}</li>
-            <li class="muted" ng-if="!attachments.length">No attachments. (TODO)</li>
+        <ul style="margin:0 0 12px;padding:0 0 0 18px">
+            <li ng-repeat="a in attachments">
+                <a ng-href="{{ downloadUrl(a) }}" target="_blank">{{ a.ATTACHMENT_NAME }}</a>
+                <em ng-if="a.ATTACHMENT_SIZE">({{ (a.ATTACHMENT_SIZE / 1024) | number:1 }} KB)</em>
+            </li>
+            <li class="muted" ng-if="!attachments.length">No attachments yet.</li>
         </ul>
+        <div ng-show="ticket.TICKET_STATUS !== 'CLOSED'"
+             style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <input type="file" id="file-input-agent"
+                   onchange="angular.element(this).scope().onFileChange(this)"
+                   ng-disabled="uploading" />
+            <button class="btn" ng-click="attach()"
+                    ng-disabled="uploading || !file">
+                {{ uploading ? 'Uploading…' : 'Attach file' }}
+            </button>
+        </div>
     </div>
 </div>

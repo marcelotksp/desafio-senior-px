@@ -1,4 +1,4 @@
-<!-- login.html — IMPLEMENTED as a reference -->
+<!-- login.html -->
 <div class="login-wrap">
     <div class="card login-card">
         <h1>Hubie <small>Tech Test</small></h1>
@@ -11,11 +11,12 @@
             <label>Password</label>
             <input type="password" ng-model="credentials.password" />
 
-            <div class="error" ng-if="error">{{ error }}</div>
-
-            <button type="submit" class="btn btn-primary" ng-disabled="loading">
-                {{ loading ? 'Signing in...' : 'Sign in' }}
-            </button>
+            <div style="margin-top:16px;text-align:center">
+                <button type="submit" class="btn btn-primary" ng-disabled="loading"
+                        style="min-width:140px">
+                    {{ loading ? 'Signing in...' : 'Sign in' }}
+                </button>
+            </div>
         </form>
 
         <div class="shortcuts">

@@ -1,10 +1,10 @@
+
 /* =====================================================================
    Hubie - .NET Senior Tech Test
    AngularJS module + routes (classic ui-router), mirroring the Hubie pattern
    (service factory + $http POST form-urlencoded to .ashx, JWT token kept in
    $sessionStorage).
-   ===================================================================== */
-angular.module('hubieTest', ['ui.router', 'ngStorage']);
+   ===================================================================== */angular.module('hubieTest', ['ui.router', 'ngStorage']);
 
 angular.module('hubieTest').config(['$stateProvider', '$urlRouterProvider',
     function ($stateProvider, $urlRouterProvider) {
@@ -24,7 +24,6 @@ angular.module('hubieTest').config(['$stateProvider', '$urlRouterProvider',
                 abstract: true,
                 templateUrl: 'views/shell.html'
             })
-
             // ---- REQUESTER ----
             .state('app.myTickets', {
                 url: '/my-tickets',
@@ -44,7 +43,6 @@ angular.module('hubieTest').config(['$stateProvider', '$urlRouterProvider',
                 controller: 'ticketDetailController',
                 data: { profile: 'REQUESTER' }
             })
-
             // ---- AGENT ----
             .state('app.queue', {
                 url: '/queue',
@@ -95,6 +93,23 @@ angular.module('hubieTest').controller('shellController',
             delete $sessionStorage.X_User_Token;
             delete $sessionStorage.USER;
             $state.go('login');
+        };
+    }
+]);
+
+angular.module('hubieTest').controller('modalController',
+    ['$scope', '$rootScope',
+    function ($scope, $rootScope) {
+        $scope.modal = { visible: false, title: '', message: '' };
+
+        $rootScope.$on('modal:show', function (e, data) {
+            $scope.modal.visible = true;
+            $scope.modal.title   = data.title;
+            $scope.modal.message = data.message;
+        });
+
+        $scope.modal.close = function () {
+            $scope.modal.visible = false;
         };
     }
 ]);

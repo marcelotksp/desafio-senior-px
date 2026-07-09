@@ -1,24 +1,21 @@
 /* =====================================================================
-   loginController â€” IMPLEMENTED as a reference.
+   loginController — IMPLEMENTED as a reference.
    Authenticates via apiService.login, stores the token (X-User-Token header)
    and the user data in $sessionStorage, then routes by profile.
    ===================================================================== */
 angular.module('hubieTest').controller('loginController',
-    ['$scope', '$state', '$sessionStorage', 'apiService',
-    function ($scope, $state, $sessionStorage, apiService) {
+    ['$scope', '$state', '$sessionStorage', 'apiService', 'modalService',
+    function ($scope, $state, $sessionStorage, apiService, modalService) {
 
         $scope.credentials = { login: '', password: '' };
-        $scope.error = null;
         $scope.loading = false;
 
-        // shortcuts to make testing easier
         $scope.fill = function (login) {
             $scope.credentials.login = login;
             $scope.credentials.password = '123456';
         };
 
         $scope.signIn = function () {
-            $scope.error = null;
             $scope.loading = true;
 
             apiService.login($scope.credentials.login, $scope.credentials.password)
@@ -27,7 +24,7 @@ angular.module('hubieTest').controller('loginController',
                     var user = response.data;
 
                     if (!token) {
-                        $scope.error = 'Authentication failed.';
+                        modalService.show('Authentication failed. Please try again.');
                         return;
                     }
 
@@ -39,7 +36,7 @@ angular.module('hubieTest').controller('loginController',
                 })
                 .catch(function (response) {
                     var code = response.headers ? response.headers('X-User-ErrorMessage') : null;
-                    $scope.error = translateError(code);
+                    modalService.show(translateError(code));
                 })
                 .finally(function () {
                     $scope.loading = false;

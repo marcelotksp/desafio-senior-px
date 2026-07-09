@@ -2,7 +2,7 @@
 <div class="page">
     <div class="page-head">
         <h2>Service queue</h2>
-        <select ng-model="statusFilter" ng-change="load()">
+        <select ng-model="statusFilter" ng-change="load()" style="width:auto">
             <option value="">All (not closed)</option>
             <option value="OPEN">Open</option>
             <option value="IN_PROGRESS">In progress</option>
@@ -11,10 +11,20 @@
     </div>
 
     <div class="card">
-        <!-- TODO (candidate): list the queue in $scope.tickets -->
-        <table class="grid">
+        <p ng-if="loading" class="muted">Loading…</p>
+
+        <table class="grid" ng-if="!loading">
             <thead>
-                <tr><th>#</th><th>Title</th><th>Category</th><th>Requester</th><th>Status</th><th></th></tr>
+                <tr>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Requester</th>
+                    <th>Agent</th>
+                    <th>Status</th>
+                    <th>Opened</th>
+                    <th></th>
+                </tr>
             </thead>
             <tbody>
                 <tr ng-repeat="t in tickets">
@@ -22,11 +32,23 @@
                     <td>{{ t.TICKET_TITLE }}</td>
                     <td>{{ t.CATEGORY_NAME }}</td>
                     <td>{{ t.REQUESTER_NAME }}</td>
-                    <td><span class="status">{{ t.TICKET_STATUS }}</span></td>
-                    <td><button class="btn btn-link" ng-click="handle(t)">handle</button></td>
+                    <td>{{ t.AGENT_NAME || '—' }}</td>
+                    <td>
+                        <span class="status"
+                              ng-class="{
+                                'status-open':      t.TICKET_STATUS === 'OPEN',
+                                'status-progress':  t.TICKET_STATUS === 'IN_PROGRESS',
+                                'status-answered':  t.TICKET_STATUS === 'ANSWERED',
+                                'status-closed':    t.TICKET_STATUS === 'CLOSED'
+                              }">
+                            {{ t.TICKET_STATUS }}
+                        </span>
+                    </td>
+                    <td>{{ t.TICKET_CREATED_DT | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td><button class="btn btn-link" ng-click="handle(t)">handle →</button></td>
                 </tr>
                 <tr ng-if="!tickets.length">
-                    <td colspan="6" class="muted">Empty queue. (TODO: implement the listing)</td>
+                    <td colspan="8" class="muted">Queue is empty.</td>
                 </tr>
             </tbody>
         </table>

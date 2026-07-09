@@ -6,22 +6,40 @@
     </div>
 
     <div class="card">
-        <!-- TODO (candidate): list the tickets in $scope.tickets -->
-        <table class="grid">
+        <p ng-if="loading" class="muted">Loading…</p>
+
+        <table class="grid" ng-if="!loading">
             <thead>
-                <tr><th>#</th><th>Title</th><th>Category</th><th>Status</th><th>Created</th><th></th></tr>
+                <tr>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Opened</th>
+                    <th></th>
+                </tr>
             </thead>
             <tbody>
                 <tr ng-repeat="t in tickets">
                     <td>{{ t.TICKET_ID }}</td>
                     <td>{{ t.TICKET_TITLE }}</td>
                     <td>{{ t.CATEGORY_NAME }}</td>
-                    <td><span class="status">{{ t.TICKET_STATUS }}</span></td>
-                    <td>{{ t.TICKET_CREATED_DT }}</td>
-                    <td><button class="btn btn-link" ng-click="openDetail(t)">open</button></td>
+                    <td>
+                        <span class="status"
+                              ng-class="{
+                                'status-open':        t.TICKET_STATUS === 'OPEN',
+                                'status-progress':    t.TICKET_STATUS === 'IN_PROGRESS',
+                                'status-answered':    t.TICKET_STATUS === 'ANSWERED',
+                                'status-closed':      t.TICKET_STATUS === 'CLOSED'
+                              }">
+                            {{ t.TICKET_STATUS }}
+                        </span>
+                    </td>
+                    <td>{{ t.TICKET_CREATED_DT | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td><button class="btn btn-link" ng-click="openDetail(t)">view →</button></td>
                 </tr>
                 <tr ng-if="!tickets.length">
-                    <td colspan="6" class="muted">No tickets yet. (TODO: implement the listing)</td>
+                    <td colspan="6" class="muted">No tickets yet. <a ui-sref="app.openTicket">Open one now</a>.</td>
                 </tr>
             </tbody>
         </table>

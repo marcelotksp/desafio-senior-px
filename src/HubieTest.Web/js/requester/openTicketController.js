@@ -1,38 +1,58 @@
 /* =====================================================================
    openTicketController (REQUESTER)
    - Load categories: IMPLEMENTED as a reference (consumes categories.ashx).
-   - Save the ticket + attach a file: TODO (candidate area).
+   - Save the ticket + attach a file
    ===================================================================== */
 angular.module('hubieTest').controller('openTicketController',
-    ['$scope', '$state', 'apiService',
-    function ($scope, $state, apiService) {
+    ['$scope', '$state', 'apiService', 'modalService',
+    function ($scope, $state, apiService, modalService) {
 
         $scope.ticket = { TICKET_TITLE: '', TICKET_DESCRIPTION: '', CATEGORY_ID: null };
         $scope.categories = [];
-        $scope.file = null;     // set by the file-input (see open-ticket.html)
+        $scope.file = null;
         $scope.saving = false;
-        $scope.error = null;
 
-        // ---- REFERENCE: populate the category dropdown ----
-        apiService.listCategories().then(function (response) {
-            $scope.categories = response.data;
+        apiService.listCategories().then(function (res) {
+            $scope.categories = res.data;
         });
 
-        // ---- TODO (candidate): submit the ticket ----
+        $scope.onFileChange = function (element) {
+            $scope.$apply(function () { $scope.file = element.files[0] || null; });
+        };
+
         $scope.save = function () {
-            $scope.error = null;
+            if (!$scope.ticket.TICKET_TITLE || !$scope.ticket.TICKET_TITLE.trim()) {
+                modalService.show('Title is required.', 'Validation');
+                return;
+            }
+            if (!$scope.ticket.CATEGORY_ID) {
+                modalService.show('Category is required.', 'Validation');
+                return;
+            }
 
-            // Expected flow:
-            //  1. validate title/description/category
-            //  2. POST 'open' to ticket.ashx via apiService (add apiService.openTicket)
-            //  3. if $scope.file is set, upload it (multipart) to attachment.ashx
-            //  4. redirect to 'app.ticketDetail' with the returned id
-            //
-            // Example JSON submit (without attachment):
-            //   apiService.request('ashx/process/ticket.ashx', 'open',
-            //       JSON.stringify($scope.ticket)).then(...);
+            $scope.saving = true;
 
-            alert('TODO: implement the ticket submission (openTicketController.save).');
+            var cat = $scope.categories.filter(function (c) {
+                return c.CATEGORY_ID === $scope.ticket.CATEGORY_ID;
+            })[0];
+            $scope.ticket.CATEGORY_NAME = cat ? cat.CATEGORY_NAME : '';
+
+            apiService.openTicket($scope.ticket)
+                .then(function (res) {
+                    var created = res.data;
+                    if ($scope.file) {
+                        return apiService.uploadAttachment(created.TICKET_ID, $scope.file)
+                            .then(function () { return created; });
+                    }
+                    return created;
+                })
+                .then(function (created) {
+                    $state.go('app.ticketDetail', { id: created.TICKET_ID });
+                })
+                .catch(function (err) {
+                    modalService.show((err.data || {}).error || 'Failed to open ticket. Please try again.');
+                })
+                .finally(function () { $scope.saving = false; });
         };
     }
 ]);
