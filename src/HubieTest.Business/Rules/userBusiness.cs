@@ -12,7 +12,10 @@ namespace HubieTest.Business
     /// </summary>
     public class userBusiness
     {
-        private readonly userDB _db = new userDB();
+        private readonly IUserDB _db;
+
+        public userBusiness() { _db = new userDB(); }
+        public userBusiness(IUserDB db) { _db = db; }
 
         /// <param name="login">user login</param>
         /// <param name="password">plain-text password (compared by hash)</param>

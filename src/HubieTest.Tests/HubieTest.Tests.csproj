@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+          Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{A1B2C3D4-0002-4A10-9B00-000000000DA2}</ProjectGuid>
+    <ProjectGuid>{A1B2C3D4-0004-4A10-9B00-000000000DA4}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>HubieTest.Business</RootNamespace>
-    <AssemblyName>HubieTest.Business</AssemblyName>
+    <RootNamespace>HubieTest.Tests</RootNamespace>
+    <AssemblyName>HubieTest.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <IsTestProject>true</IsTestProject>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,43 +32,40 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.dll</HintPath>
+    <Reference Include="nunit.framework">
+      <HintPath>..\packages\NUnit.3.13.3\lib\net45\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    <Reference Include="Moq">
+      <HintPath>..\packages\Moq.4.18.4\lib\net462\Moq.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+    <Reference Include="Castle.Core">
+      <HintPath>..\packages\Castle.Core.5.1.1\lib\net462\Castle.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Data.Entity" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data\categoryDB.cs" />
-    <Compile Include="Data\Interface\ITicketDB.cs" />
-    <Compile Include="Data\Interface\IUserDB.cs" />
-    <Compile Include="Data\ticketDB.cs" />
-    <Compile Include="Data\userDB.cs" />
-    <Compile Include="Entities\AuthResult.cs" />
-    <Compile Include="Rules\categoryBusiness.cs" />
-    <Compile Include="Rules\ticketBusiness.cs" />
-    <Compile Include="Rules\userBusiness.cs" />
-    <Compile Include="Security\SecurityHelper.cs" />
+    <Compile Include="ticketBusinessTests.cs" />
+    <Compile Include="userBusinessTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HubieTest.Dal\HubieTest.Dal.csproj">
       <Project>{A1B2C3D4-0001-4A10-9B00-000000000DA1}</Project>
       <Name>HubieTest.Dal</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\HubieTest.Business\HubieTest.Business.csproj">
+      <Project>{A1B2C3D4-0002-4A10-9B00-000000000DA2}</Project>
+      <Name>HubieTest.Business</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

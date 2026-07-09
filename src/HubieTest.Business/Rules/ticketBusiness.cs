@@ -17,7 +17,9 @@ namespace HubieTest.Business
     /// </summary>
     public class ticketBusiness
     {
-        private readonly ticketDB _db = new ticketDB();
+        private readonly ITicketDB _db;
+        public ticketBusiness() { _db = new ticketDB(); }
+        public ticketBusiness(ITicketDB db) { _db = db; }
 
         // logged-in user context (set by the handler from the token)
         public long loggedUserId { get; set; }

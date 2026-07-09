@@ -7,7 +7,7 @@ namespace HubieTest.Business.Data
     /// Data access for APP_USER (repository style, like ticketDB in Hubie:
     /// each operation opens its own DbContext inside a using).
     /// </summary>
-    public class userDB
+    public class userDB : IUserDB
     {
         public APP_USER getByLogin(string login)
         {

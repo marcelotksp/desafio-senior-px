@@ -16,7 +16,7 @@ namespace HubieTest.Business.Data
     /// if you think it is better — just explain your choices in the PR.
     /// ==================================================================
     /// </summary>
-    public class ticketDB
+    public class ticketDB : ITicketDB
     {
         // ---------- TICKET ----------
 
